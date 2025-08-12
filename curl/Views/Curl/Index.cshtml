@@ -1,0 +1,109 @@
+@model curl.Models.CurlExecuteViewModel
+@{
+    ViewData["Title"] = "Chạy cURL";
+}
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card mb-3">
+            <div class="card-header">Nhập lệnh cURL</div>
+            <div class="card-body">
+                <form asp-action="Index" asp-controller="Curl" method="post">
+                    <div class="mb-3">
+                        <textarea asp-for="CurlText" class="form-control" rows="8" placeholder="curl -X GET https://httpbin.org/get -H 'Accept: application/json'"></textarea>
+                        <span asp-validation-for="CurlText" class="text-danger"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary me-2">Thực thi</button>
+                    <button type="button" id="btnSaveCurl" class="btn btn-outline-secondary me-2">Lưu</button>
+                    <button type="button" id="btnClearCurl" class="btn btn-outline-danger">Xóa đã lưu</button>
+                    @Html.AntiForgeryToken()
+                </form>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model?.ErrorMessage))
+        {
+            <div class="alert alert-danger">@Model.ErrorMessage</div>
+        }
+
+        @if (Model?.ParsedCommand != null)
+        {
+            <div class="card mb-3">
+                <div class="card-header">Đã phân tích</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Method:</strong> @Model.ParsedCommand.Method
+                    </div>
+                    <div class="mb-2">
+                        <strong>URL:</strong> @Model.ParsedCommand.Url
+                    </div>
+                    @if (Model.ParsedCommand.Headers?.Count > 0)
+                    {
+                        <div class="mb-2">
+                            <strong>Headers:</strong>
+                            <pre class="border p-2">@string.Join("\n", Model.ParsedCommand.Headers.Select(h => $"{h.Key}: {h.Value}"))</pre>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ParsedCommand.Body))
+                    {
+                        <div class="mb-2">
+                            <strong>Body:</strong>
+                            <pre class="border p-2">@Model.ParsedCommand.Body</pre>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header">Kết quả</div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(Model?.ResponseBody))
+                {
+                    <div class="mb-2">
+                        <strong>Body (JSON):</strong>
+                        <pre class="border p-2" style="max-height: 500px; overflow:auto">@Model.ResponseBody</pre>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const key = 'savedCurlCommand';
+            const txt = document.getElementById('CurlText');
+            const btnSave = document.getElementById('btnSaveCurl');
+            const btnClear = document.getElementById('btnClearCurl');
+
+            try {
+                const saved = localStorage.getItem(key);
+                if (saved && txt && (!txt.value || txt.value.trim().length === 0)) {
+                    txt.value = saved;
+                }
+            } catch {}
+
+            if (btnSave) {
+                btnSave.addEventListener('click', function () {
+                    try {
+                        localStorage.setItem(key, txt.value || '');
+                        btnSave.textContent = 'Đã lưu';
+                        setTimeout(() => btnSave.textContent = 'Lưu', 1200);
+                    } catch {}
+                });
+            }
+            if (btnClear) {
+                btnClear.addEventListener('click', function () {
+                    try { localStorage.removeItem(key); } catch {}
+                });
+            }
+        })();
+    </script>
+}
+
+
